@@ -27,11 +27,25 @@ const gameBoard = (() => {
         let boardArrayY = event.target.dataset.y;
 
         if (board[boardArrayY][boardArrayX] == '') {
-            board[boardArrayY][boardArrayX] = currentPlayer.gamePeice;
+            board[boardArrayY][boardArrayX] = currentPlayer.gamePiece;
             displayController.validPlay(currentPlayer, event.target);
             let winStatus = winConditions();
             if (winStatus == 'nothing') {
-                changePlayer();
+                if (changePlayer().computer == true) {
+                    let computerTurnTile = computerTurn();
+                    board[computerTurnTile.dataset.y][computerTurnTile.dataset.x] = currentPlayer.gamePiece;
+                    displayController.validPlay(currentPlayer, computerTurnTile);
+                    let computerWinStatus = winConditions();
+                    if (computerWinStatus == 'nothing') {
+                        changePlayer();
+                    } else {
+                        displayController.winnerDisplay(computerWinStatus);
+                    }
+
+                } else {
+                    changePlayer();
+                }
+
             } else {
                 displayController.winnerDisplay(winStatus);
             }
@@ -51,13 +65,30 @@ const gameBoard = (() => {
         } else {
             currentPlayer = players[players.indexOf(currentPlayer) + 1];
         }
+        return currentPlayer;
     };
+
+    const computerTurn = () => {
+        let possibleComputerTurns = [];
+        for (let i = 0; i < board.length; i++) {
+            for (let j = 0; j < board.length; j++) {
+                if (board[i][j] == '') {
+                    possibleComputerTurns.push([i, j]);
+                }
+            }
+        }
+        let randomNumber = Math.floor(Math.random() * possibleComputerTurns.length);
+        let randomTile = possibleComputerTurns[randomNumber];
+
+        const gameTile = document.querySelector(`[data-x="${randomTile[1]}"][data-y="${randomTile[0]}"]`);
+        return gameTile;
+    }
 
     const winConditions = () => {
 
         //Check for win along x-axis of board nested array
         for (let i = 0; i < board.length; i++) {
-            if (board[i].every(peice => peice == currentPlayer.gamePeice)) {
+            if (board[i].every(piece => piece == currentPlayer.gamePiece)) {
                 return 'win';
             }
         }
@@ -68,7 +99,7 @@ const gameBoard = (() => {
             for (let j = 0; j < board.length; j++) {
                 yAxisArray.push(board[j][i]);
             }
-            if (yAxisArray.every(peice => peice == currentPlayer.gamePeice)) {
+            if (yAxisArray.every(piece => piece == currentPlayer.gamePiece)) {
                 return 'win';
             }
         }
@@ -78,7 +109,7 @@ const gameBoard = (() => {
         for (let i = 0; i < board.length; i++) {
             topLeftBottomRightDiagonalArray.push(board[i][i]);
         }
-        if (topLeftBottomRightDiagonalArray.every(peice => peice == currentPlayer.gamePeice)) {
+        if (topLeftBottomRightDiagonalArray.every(piece => piece == currentPlayer.gamePiece)) {
             return 'win';
         }
 
@@ -87,13 +118,13 @@ const gameBoard = (() => {
         for (let i = 0; i < board.length; i++) {
             bottomLeftTopRightDiagonalArray.push(board[board.length - 1 - i][i]);
         }
-        if (bottomLeftTopRightDiagonalArray.every(peice => peice == currentPlayer.gamePeice)) {
+        if (bottomLeftTopRightDiagonalArray.every(piece => piece == currentPlayer.gamePiece)) {
             return 'win';
         }
 
 
-        //Check for tie by comparing every peice against the board array's initial fill of ''
-        if (board.flat().every(peice => peice != '')) {
+        //Check for tie by comparing every piece against the board array's initial fill of ''
+        if (board.flat().every(piece => piece != '')) {
             return 'tie';
         }
         return 'nothing';
@@ -103,9 +134,9 @@ const gameBoard = (() => {
 
 
 
-const Player = (name, gamePeice) => {
+const Player = (name, gamePiece, computer = false) => {
 
-    return { name, gamePeice };
+    return { name, gamePiece, computer };
 }
 
 const displayController = (() => {
@@ -119,11 +150,12 @@ const displayController = (() => {
         startButton.addEventListener('click', function() {
             const playerOneNameInput = document.getElementsByClassName('player-name')[0].value;
             const playerTwoNameInput = document.getElementsByClassName('player-name')[1].value;
-            const playerOnePeiceInput = document.getElementsByClassName('player-peice')[0].value;
-            const playerTwoPeiceInput = document.getElementsByClassName('player-peice')[1].value;
+            const playerOnePieceInput = document.getElementsByClassName('player-piece')[0].value;
+            const playerTwoPieceInput = document.getElementsByClassName('player-piece')[1].value;
+            const playerTwoComputer = document.getElementsByClassName('computer-check')[0].checked;
 
-            const playerOne = Player(playerOneNameInput, playerOnePeiceInput);
-            const playerTwo = Player(playerTwoNameInput, playerTwoPeiceInput);
+            const playerOne = Player(playerOneNameInput, playerOnePieceInput);
+            const playerTwo = Player(playerTwoNameInput, playerTwoPieceInput, playerTwoComputer);
             gameBoard.init(3, playerOne, playerTwo);
 
             startModal.style.display = 'none';
@@ -163,9 +195,9 @@ const displayController = (() => {
     };
 
     const validPlay = (currentPlayer, gameTile) => {
-        const gamePeice = document.createElement('p');
-        gamePeice.innerText = currentPlayer.gamePeice;
-        gameTile.appendChild(gamePeice);
+        const gamePiece = document.createElement('p');
+        gamePiece.innerText = currentPlayer.gamePiece;
+        gameTile.appendChild(gamePiece);
     };
 
     const invalidPlay = (gameTile) => {
